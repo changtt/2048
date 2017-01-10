@@ -2,10 +2,16 @@ var GameContent = function() {
 	return {
 		rowNum : 4,// 行数
 		colNum : 4,// 列数，提取行列数方便扩展
-		score : 0,// 总得分
+		score : 0,// 操作得分
+		sum : 0,// 面板数字统计得分
+		bestScore : 0,// 得分记录，
+		level : 0,// 分数等级
 		scoreElem : null,// 显示总分数的element
 		gridElem : null,// 游戏网格面板
 		touchElem : null,// 点击触发区域
+		levelBar : null,// 经验条
+		levelText : null,// 等级描述
+		bestElem : null,// 最高分记录
 		gridValues : [],
 		firstInit : true,
 
@@ -25,8 +31,13 @@ var GameContent = function() {
 			this.scoreElem = document.getElementById("score");
 			this.gridElem = document.getElementById("grid");
 			this.touchElem = document.getElementById("touch");
-			this.gridElem.removeAttribute("class");
+			this.levelBar = document.getElementById("bar").getElementsByTagName("div")[0];
+			var infoText = document.getElementById("text");
+			this.levelText = infoText.getElementsByTagName("p")[0];
+			this.bestElem = infoText.getElementsByTagName("p")[1];
+			// this.gridElem.removeAttribute("class"); //重置后去掉游戏结束样式
 
+			this.level = 0;
 			this.score = 0;
 			this.updateScore();
 
@@ -72,7 +83,9 @@ var GameContent = function() {
 
 		// 更新分数
 		updateScore : function() {
-			this.scoreElem.innerHTML = this.score + "pts";
+			this.scoreElem.innerHTML = (this.score + this.sum) + "分";
+			this.updateBest();
+			this.updateLevel();
 		},
 
 		// 随机填充一格
@@ -97,6 +110,51 @@ var GameContent = function() {
 					this.gameOver();
 				}
 			}
+		},
+
+		updateBest : function() {
+			if (this.bestScore < (this.score + this.sum)) {
+				this.bestScore = (this.score + this.sum);
+			}
+			this.bestElem.innerHTML = this.bestScore + "分";
+		},
+
+		getLevelText : function(lvl) {
+			if (lvl === 1) // 4+
+				return "初学乍练";
+			else if (lvl === 2) // 16+
+				return "登堂入室";
+			else if (lvl === 3) // 64+
+				return "圆转纯熟";
+			else if (lvl === 4) // 256+
+				return "初窥堂奥";
+			else if (lvl === 5) // 1024+
+				return "略有小成";
+			else if (lvl === 6) // 4,096+
+				return "渐入佳境";
+			else if (lvl === 7) // 16,384+
+				return "炉火纯青";
+			else if (lvl === 8) // 65,536+
+				return "已臻大成";
+			else if (lvl === 9) // 262,144+
+				return "登峰造极";
+			else if (lvl === 10) // 1,048,576+
+				return "出神入化";
+			else
+				return "";
+		},
+
+		updateLevel : function() {
+			this.level = Math.floor(Math.log(this.score + this.sum) / Math.log(4));
+
+			if (this.level > 10)
+				this.level = 10;
+			if (this.level < 0)
+				this.level = 0;
+
+			var desc = this.getLevelText(this.level);
+			this.levelText.innerHTML = "Level " + this.level + (desc === "" ? "" : (" — " + desc));
+			this.levelBar.style.width = (this.level * 10) + "%";
 		},
 
 		// 结束，播放结束动画等
@@ -156,7 +214,8 @@ var GameContent = function() {
 			this.mergeGrid(direction);
 			// 为了填充合并空出来的格子，继续把有数字的格子再往点击的方向挪一遍
 			this.moveDirection(direction);
-
+			// 统计得分
+			this.calcSum();
 			// 加新数字
 			this.spawnRand();
 			// 更新界面
@@ -334,9 +393,22 @@ var GameContent = function() {
 		// 合并得分
 		addScore : function(block) {
 			this.score += this.calcScore(block);
+		},
+
+		// 面板所有数字得分
+		calcSum : function() {
+			this.sum = 0;
+			var row, col;
+
+			for (var row = 0; row < 4; row++) {
+				for (var col = 0; col < 4; col++) {
+					if (this.gridValues[row][col] !== -1)
+						this.sum += this.gridValues[row][col];
+				}
+			}
+
 			this.updateScore();
 		}
-
 	}
 }();
 
